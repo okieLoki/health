@@ -193,3 +193,94 @@ export const healthDays = pgTable(
   },
   (t) => [uniqueIndex("health_user_day_idx").on(t.userId, t.day)],
 );
+
+export const fastingSessions = pgTable(
+  "fasting_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    targetHours: real("target_hours").notNull().default(16),
+    note: text("note"),
+  },
+  (t) => [index("fast_user_start_idx").on(t.userId, t.startedAt)],
+);
+
+export const reportRuns = pgTable(
+  "report_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+    status: text("status").notNull(),
+    detail: text("detail"),
+  },
+  (t) => [uniqueIndex("report_user_day_idx").on(t.userId, t.day)],
+);
+
+/** A chat thread. Threads keep separate contexts so an old day's back and
+ * forth does not leak into today's logging. */
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Taken from the first thing you said, editable later. */
+    title: text("title").notNull().default("New chat"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Bumped on every message so the list sorts by recent activity. */
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("conversation_user_updated_idx").on(t.userId, t.updatedAt)],
+);
+
+/**
+ * The messages inside a thread. Every log starts as a user message; the
+ * assistant reply records what was actually filed and where, so the thread
+ * doubles as an audit trail you can scroll.
+ */
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id").references(() => conversations.id, {
+      onDelete: "cascade",
+    }),
+    /** user | assistant */
+    role: text("role").notNull(),
+    text: text("text").notNull(),
+    imageUrl: text("image_url"),
+    /** food | workout | weight | water | fast_start | fast_end | question | error */
+    kind: text("kind"),
+    /** Result cards: what got logged, with ids so rows can be undone. */
+    payload: jsonb("payload").$type<ChatResultCard[]>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("message_user_time_idx").on(t.userId, t.createdAt),
+    index("message_thread_idx").on(t.conversationId, t.createdAt),
+  ],
+);
+
+export type ChatResultCard = {
+  kind: "food" | "workout" | "weight" | "water" | "fast_start" | "fast_end";
+  id: string | null;
+  title: string;
+  lines: string[];
+  /** Small key/value chips shown under the title. */
+  facts?: { label: string; value: string }[];
+  sources?: { title: string; uri: string }[];
+  /** A branded lookup was wanted but the search quota was spent. */
+  unverified?: boolean;
+};
