@@ -129,3 +129,67 @@ export const foodLogs = pgTable(
   },
   (t) => [index("food_user_time_idx").on(t.userId, t.eatenAt)],
 );
+
+export const waterLogs = pgTable(
+  "water_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    amountMl: integer("amount_ml").notNull(),
+    loggedAt: timestamp("logged_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("water_user_time_idx").on(t.userId, t.loggedAt)],
+);
+
+export const workouts = pgTable(
+  "workouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** gym | walk | run | cardio | sport | other */
+    kind: text("kind").notNull().default("gym"),
+    title: text("title").notNull(),
+    /** Exactly what you typed, kept verbatim. */
+    notes: text("notes"),
+    performedAt: timestamp("performed_at", { withTimezone: true }).notNull().defaultNow(),
+    durationMin: real("duration_min"),
+    caloriesBurned: real("calories_burned"),
+    distanceKm: real("distance_km"),
+    exercises: jsonb("exercises").$type<Exercise[]>(),
+    /** Sum of reps x weight across all sets, the number that should trend up. */
+    totalVolumeKg: real("total_volume_kg"),
+    source: text("source").notNull().default("text"),
+    aiNotes: text("ai_notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("workout_user_time_idx").on(t.userId, t.performedAt)],
+);
+
+/** One row per calendar day, upserted by the iOS Shortcut. */
+export const healthDays = pgTable(
+  "health_days",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    steps: integer("steps"),
+    activeEnergyKcal: real("active_energy_kcal"),
+    basalEnergyKcal: real("basal_energy_kcal"),
+    exerciseMin: real("exercise_min"),
+    standHours: integer("stand_hours"),
+    distanceKm: real("distance_km"),
+    flightsClimbed: integer("flights_climbed"),
+    restingHr: real("resting_hr"),
+    avgHr: real("avg_hr"),
+    sleepMin: real("sleep_min"),
+    source: text("source").notNull().default("apple"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("health_user_day_idx").on(t.userId, t.day)],
+);
