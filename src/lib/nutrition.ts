@@ -85,3 +85,51 @@ export function calorieTarget(opts: {
  * Protein high enough to protect muscle in a deficit, fat at 25% of calories
  * for hormone health, carbs take whatever is left.
  */
+export function macroTargets(opts: { calories: number; weightKg: number; goal: string }): {
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+} {
+  const perKg = opts.goal === "lose" ? 1.8 : 1.6;
+  const proteinG = Math.round(opts.weightKg * perKg);
+  const fatG = Math.round((opts.calories * 0.25) / 9);
+  const carbsG = Math.max(0, Math.round((opts.calories - proteinG * 4 - fatG * 9) / 4));
+  return { proteinG, carbsG, fatG };
+}
+
+/** Least-squares slope over (dayIndex, weightKg), returned as kg/week. */
+export function weightTrendPerWeek(points: { t: number; kg: number }[]): number | null {
+  if (points.length < 3) return null;
+  const n = points.length;
+  const days = points.map((p) => p.t / 86_400_000);
+  const meanX = days.reduce((a, b) => a + b, 0) / n;
+  const meanY = points.reduce((a, b) => a + b.kg, 0) / n;
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (days[i] - meanX) * (points[i].kg - meanY);
+    den += (days[i] - meanX) ** 2;
+  }
+  if (den === 0) return null;
+  return (num / den) * 7;
+}
+
+/** Centred-ish moving average, smooths out the daily water-weight noise. */
+export function movingAverage(values: (number | null)[], window: number): (number | null)[] {
+  return values.map((_, i) => {
+    const slice = values.slice(Math.max(0, i - window + 1), i + 1).filter((v): v is number => v != null);
+    if (!slice.length) return null;
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+}
+
+export function bmi(weightKg: number, heightCm: number): number {
+  return weightKg / (heightCm / 100) ** 2;
+}
+
+export function bmiBand(value: number): { label: string; tone: "good" | "warning" | "serious" } {
+  if (value < 18.5) return { label: "Underweight", tone: "warning" };
+  if (value < 25) return { label: "Healthy", tone: "good" };
+  if (value < 30) return { label: "Overweight", tone: "warning" };
+  return { label: "Obese", tone: "serious" };
+}
