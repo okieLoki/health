@@ -202,3 +202,47 @@ const exerciseSchema = z.object({
   volumeKg: optNum,
   notes: z.string().nullish().catch(null),
 });
+
+/* ------------------------------------------------------------ nutrition rules */
+
+const NUTRITION_RULES = `
+- Identify every distinct food and drink with a realistic portion.
+- EVERY item carries calories, proteinG, carbsG AND fatG. Never leave a macro at 0 unless the
+  food truly has none, instant noodles are mostly carbs and fat, not 0 g of each.
+- Scale to the stated quantity: "1.5 packets" is 1.5x the per-pack numbers.
+- Indian home cooking: assume normal ghee/oil unless told otherwise. Use IFCT/USDA references.
+- Estimate photo portions from plate size, hand and cutlery.
+- "name" describes the FOOD, never the meal slot. "Maggi with cheese", "Eggs and black
+  coffee". Never "Breakfast", "Lunch", "Dinner" or "Snack" as the name.
+- Never refuse and never ask a clarifying question. Estimate, and lower confidence instead.`;
+
+const LOOKUP_RULE = `
+- Set needsLookup true ONLY when the item is a specific branded, packaged or restaurant product
+  whose official published figures would meaningfully change the answer (Maggi, Amul, a named
+  protein bar, "McSpicy from McDonald's"). Put a precise search phrase in lookupQuery.
+  Generic or home-cooked food never needs a lookup.`;
+
+/* ---------------------------------------------------------------- grounding */
+
+/**
+ * One lookup for a branded item. Parallel first because it is free and
+ * unmetered; Gemini grounding only if that fails and its quota still allows.
+ * Either way a failure returns null and the caller keeps its own estimate.
+ */
+async function groundedFacts(query: string): Promise<GenerateResult | null> {
+  const viaParallel = await webSearch(
+    `Official published nutrition facts for ${query}: serving size, calories, protein, carbohydrate, fat, fibre, sugar and sodium.`,
+    [query, `${query} nutrition facts calories protein carbs fat`],
+  );
+  if (viaParallel) return viaParallel;
+
+  return generate({
+    system: `You look up official nutrition facts. Search, then state the figures plainly:
+serving size, calories, protein, carbohydrate, fat, fibre, sugar and sodium, and whose
+numbers they are. If you cannot find official figures, say so in one line.`,
+    parts: [{ text: query }],
+    search: true,
+    optional: true,
+    temperature: 0,
+  });
+}
