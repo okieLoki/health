@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Warm paper, near-black ink, one deep teal for anything actionable.
+ * Colour is spent on data and brand moments only, never decoration, which
+ * is what keeps it from reading like a generic dashboard.
+ */
+:root {
+  color-scheme: light;
+
+  --canvas: #faf8f4;
+  --surface: #ffffff;
+  --surface-2: #f2efe9;
+  --surface-3: #e7e3da;
+  --hairline: #e9e5dd;
+  --hairline-strong: #d5d0c5;
+
+  --ink: #1a1917;
+  --ink-2: #5c574e;
+  --ink-3: #8d877b;
+
+  --brand: #1a1917;
+  --brand-hover: #34322d;
+  --brand-ink: #ffffff;
+  --brand-soft: #f0ede6;
+
+  /* Validated categorical palette, data only, fixed order, never cycled. */
+  --series-1: #2a9d8f;
+  --series-2: #e63946;
+  --series-3: #4a6fc0;
+
+  --good: #2a9d8f;
+  --warning: #b8860b;
+  --critical: #e63946;
+
+  --grid: #ece8e0;
+
+  /* Soft tinted metric surfaces. Each metric keeps its own hue so the eye
+     learns the grid by colour without any of it being a data encoding. */
+  --tint-cal: #fdece7;
+  --tint-cal-ink: #b4472c;
+  --tint-water: #e8f0f6;
+  --tint-water-ink: #2c5c80;
+  --tint-body: #efecf8;
+  --tint-body-ink: #4c3f8c;
+  --tint-move: #e8f4ec;
+  --tint-move-ink: #1f6b4a;
+  --tint-time: #fbf2df;
+  --tint-time-ink: #8a6512;
+
+  --shadow-sm: 0 1px 2px rgb(25 24 21 / 0.05);
+  --shadow: 0 2px 4px rgb(25 24 21 / 0.04), 0 12px 28px -14px rgb(25 24 21 / 0.16);
+  --shadow-lg: 0 8px 16px rgb(25 24 21 / 0.06), 0 32px 64px -24px rgb(25 24 21 / 0.28);
+
+  --r-sm: 12px;
+  --r: 18px;
+  --r-lg: 26px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --canvas: #0d0c0b;
+    --surface: #171614;
+    --surface-2: #211f1c;
+    --surface-3: #2c2926;
+    --hairline: #262421;
+    --hairline-strong: #3c3934;
+    --ink: #faf8f4;
+    --ink-2: #b5afa4;
+    --ink-3: #857f74;
+    --brand: #faf8f4;
+    --brand-hover: #ffffff;
+    --brand-ink: #171614;
+    --brand-soft: #242220;
+    --series-1: #2e9e8e;
+    --series-2: #e85a66;
+    --series-3: #7b87e5;
+    --grid: #252320;
+    --tint-cal: #2c1a14;
+    --tint-cal-ink: #ee9878;
+    --tint-water: #15222e;
+    --tint-water-ink: #8fb8dc;
+    --tint-body: #1e1b2e;
+    --tint-body-ink: #a99be8;
+    --tint-move: #14261c;
+    --tint-move-ink: #63c795;
+    --tint-time: #2a2313;
+    --tint-time-ink: #e3c070;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px -14px rgb(0 0 0 / 0.7);
+    --shadow-lg: 0 8px 16px rgb(0 0 0 / 0.5), 0 32px 64px -24px rgb(0 0 0 / 0.8);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0d0c0b;
+  --surface: #171614;
+  --surface-2: #211f1c;
+  --surface-3: #2c2926;
+  --hairline: #262421;
+  --hairline-strong: #3c3934;
+  --ink: #faf8f4;
+  --ink-2: #b5afa4;
+  --ink-3: #857f74;
+  --brand: #faf8f4;
+  --brand-hover: #ffffff;
+  --brand-ink: #171614;
+  --brand-soft: #242220;
+  --series-1: #2e9e8e;
+  --series-2: #e85a66;
+  --series-3: #7b87e5;
+  --grid: #252320;
+  --tint-cal: #2c1a14;
+  --tint-cal-ink: #ee9878;
+  --tint-water: #15222e;
+  --tint-water-ink: #8fb8dc;
+  --tint-body: #1e1b2e;
+  --tint-body-ink: #a99be8;
+  --tint-move: #14261c;
+  --tint-move-ink: #63c795;
+  --tint-time: #2a2313;
+  --tint-time-ink: #e3c070;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px -14px rgb(0 0 0 / 0.7);
+  --shadow-lg: 0 8px 16px rgb(0 0 0 / 0.5), 0 32px 64px -24px rgb(0 0 0 / 0.8);
+}
+
+* {
+  border-color: var(--hairline);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.011em;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
