@@ -147,3 +147,128 @@ export function Meter({
     </div>
   );
 }
+
+export function Ring({
+  value,
+  target,
+  size = 150,
+  stroke = 11,
+  color = "var(--brand)",
+  children,
+}: {
+  value: number;
+  target: number | null;
+  size?: number;
+  stroke?: number;
+  color?: string;
+  children?: ReactNode;
+}) {
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const pct = target ? Math.min(1, value / target) : 0;
+  const over = target ? value > target : false;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={over ? "var(--critical)" : color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          style={{ transition: "stroke-dashoffset 900ms cubic-bezier(.22,1,.36,1)" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">{children}</div>
+    </div>
+  );
+}
+
+export function Empty({
+  illustration,
+  title,
+  hint,
+  action,
+}: {
+  illustration?: ReactNode;
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+      {illustration}
+      <p className="text-[16px] font-bold">{title}</p>
+      {hint && <p className="max-w-xs text-[14px] leading-relaxed text-[var(--ink-3)]">{hint}</p>}
+      {action && <div className="mt-1">{action}</div>}
+    </div>
+  );
+}
+
+export function Pill({
+  children,
+  tone = "default",
+}: {
+  children: ReactNode;
+  tone?: "default" | "good" | "warning" | "critical" | "brand";
+}) {
+  const map = {
+    default: "bg-[var(--surface-2)] text-[var(--ink-2)]",
+    good: "bg-[var(--good)]/12 text-[var(--good)]",
+    warning: "bg-[var(--warning)]/15 text-[#8a6100] dark:text-[var(--warning)]",
+    critical: "bg-[var(--critical)]/12 text-[var(--critical)]",
+    brand: "bg-[var(--brand-soft)] text-[var(--brand)]",
+  } as const;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold ${map[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+/** Tappable row, the main way to drill from a summary into detail. */
+export function Row({
+  icon,
+  title,
+  detail,
+  value,
+  valueSub,
+  trailing,
+}: {
+  icon?: ReactNode;
+  title: ReactNode;
+  detail?: ReactNode;
+  value?: ReactNode;
+  valueSub?: ReactNode;
+  trailing?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-3">
+      {icon && (
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[var(--surface-2)] text-[var(--ink-2)]">
+          {icon}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-semibold leading-snug">{title}</p>
+        {detail && <p className="truncate text-[13px] text-[var(--ink-3)]">{detail}</p>}
+      </div>
+      {value != null && (
+        <div className="shrink-0 text-right">
+          <p className="tnum text-[15px] font-bold">{value}</p>
+          {valueSub && <p className="text-[12px] text-[var(--ink-3)]">{valueSub}</p>}
+        </div>
+      )}
+      {trailing}
+    </div>
+  );
+}
+
+export function Divider() {
+  return <div className="h-px bg-[var(--hairline)]" />;
+}
