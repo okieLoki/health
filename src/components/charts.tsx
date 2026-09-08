@@ -234,3 +234,135 @@ export function WeightChart({ data, goalKg }: { data: Point[]; goalKg?: number |
     </ChartFrame>
   );
 }
+
+/* ------------------------------------------------------------------ energy */
+
+export function EnergyChart({ data }: { data: Point[] }) {
+  const points = data.filter((d) => d.net != null);
+  return (
+    <ChartFrame
+      title="Daily energy balance"
+      hint="Calories eaten minus calories burned. Below the line is a deficit."
+      height={230}
+      legend={[
+        { label: "Deficit", color: "var(--series-1)" },
+        { label: "Surplus", color: "var(--critical)" },
+      ]}
+      table={
+        <DataTable
+          columns={["Day", "Eaten", "Burned", "Net"]}
+          rows={points.map((d) => [d.day, d.calories, d.burned, d.net])}
+        />
+      }
+    >
+      <BarChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="day" tickFormatter={shortDay} tick={AXIS} axisLine={false} tickLine={false} minTickGap={20} />
+        <YAxis tick={AXIS} axisLine={false} tickLine={false} width={46} />
+        <Tooltip
+          cursor={{ fill: "var(--surface-3)" }}
+          content={({ active, payload, label }) =>
+            active && payload?.length ? (
+              <Tip
+                title={String(label)}
+                rows={[
+                  { label: "Eaten", value: `${payload[0].payload.calories ?? "-"} kcal` },
+                  { label: "Burned", value: `${payload[0].payload.burned ?? "-"} kcal` },
+                  {
+                    label: (payload[0].payload.net ?? 0) < 0 ? "Deficit" : "Surplus",
+                    value: `${Math.abs(payload[0].payload.net ?? 0)} kcal`,
+                    color: (payload[0].payload.net ?? 0) < 0 ? "var(--series-1)" : "var(--critical)",
+                  },
+                ]}
+              />
+            ) : null
+          }
+        />
+        <ReferenceLine y={0} stroke="var(--ink-3)" strokeWidth={1.5} />
+        <Bar dataKey="net" radius={[3, 3, 3, 3]} maxBarSize={22}>
+          {points.map((d) => (
+            <Cell key={d.day} fill={(d.net ?? 0) < 0 ? "var(--series-1)" : "var(--critical)"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ChartFrame>
+  );
+}
+
+/* ------------------------------------------------------------------- steps */
+
+export function StepsChart({ data, target }: { data: Point[]; target: number }) {
+  const points = data.filter((d) => d.steps != null);
+  return (
+    <ChartFrame
+      title="Steps"
+      hint={points.length ? undefined : "Nothing yet, set up the Apple Health shortcut in your profile."}
+      height={200}
+      legend={[
+        { label: "Steps", color: "var(--series-3)" },
+        { label: `Target ${target.toLocaleString()}`, color: "var(--ink-3)", shape: "line" },
+      ]}
+      table={<DataTable columns={["Day", "Steps"]} rows={points.map((d) => [d.day, d.steps])} />}
+    >
+      <BarChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="day" tickFormatter={shortDay} tick={AXIS} axisLine={false} tickLine={false} minTickGap={20} />
+        <YAxis tick={AXIS} axisLine={false} tickLine={false} width={46} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
+        <Tooltip
+          cursor={{ fill: "var(--surface-3)" }}
+          content={({ active, payload, label }) =>
+            active && payload?.length ? (
+              <Tip
+                title={String(label)}
+                rows={[{ label: "Steps", value: Number(payload[0].value).toLocaleString(), color: "var(--series-3)" }]}
+              />
+            ) : null
+          }
+        />
+        <ReferenceLine y={target} stroke="var(--ink-3)" strokeDasharray="4 4" strokeWidth={1.5} />
+        <Bar dataKey="steps" fill="var(--series-3)" radius={[3, 3, 0, 0]} maxBarSize={22} />
+      </BarChart>
+    </ChartFrame>
+  );
+}
+
+/* ------------------------------------------------------------------- water */
+
+export function WaterChart({ data, target }: { data: Point[]; target: number }) {
+  const points = data.filter((d) => d.waterMl != null);
+  return (
+    <ChartFrame
+      title="Water"
+      height={200}
+      legend={[
+        { label: "Litres", color: "var(--series-1)" },
+        { label: `Target ${(target / 1000).toFixed(1)} L`, color: "var(--ink-3)", shape: "line" },
+      ]}
+      table={
+        <DataTable
+          columns={["Day", "Litres"]}
+          rows={points.map((d) => [d.day, ((d.waterMl ?? 0) / 1000).toFixed(2)])}
+        />
+      }
+    >
+      <BarChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="day" tickFormatter={shortDay} tick={AXIS} axisLine={false} tickLine={false} minTickGap={20} />
+        <YAxis tick={AXIS} axisLine={false} tickLine={false} width={40} tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}`} />
+        <Tooltip
+          cursor={{ fill: "var(--surface-3)" }}
+          content={({ active, payload, label }) =>
+            active && payload?.length ? (
+              <Tip
+                title={String(label)}
+                rows={[{ label: "Water", value: `${(Number(payload[0].value) / 1000).toFixed(2)} L`, color: "var(--series-1)" }]}
+              />
+            ) : null
+          }
+        />
+        <ReferenceLine y={target} stroke="var(--ink-3)" strokeDasharray="4 4" strokeWidth={1.5} />
+        <Bar dataKey="waterMl" fill="var(--series-1)" radius={[3, 3, 0, 0]} maxBarSize={22} />
+      </BarChart>
+    </ChartFrame>
+  );
+}
