@@ -244,3 +244,173 @@ export function Chat({ initial }: { initial: ChatMessage[] }) {
     </div>
   );
 }
+
+/* ----------------------------------------------------------------- parts */
+
+function UserBubble({ message }: { message: ChatMessage }) {
+  return (
+    <div className="flex justify-end">
+      <div className="max-w-[85%]">
+        {message.imageUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={`/api/photos/${message.imageUrl}`}
+            alt=""
+            className="mb-1.5 ml-auto max-h-56 rounded-3xl rounded-br-lg border border-[var(--hairline)] object-cover"
+          />
+        )}
+        {message.text && (
+          <p className="rounded-3xl rounded-br-lg bg-[var(--brand)] px-4 py-2.5 text-[15px] leading-relaxed text-[var(--brand-ink)]">
+            {message.text}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AssistantBlock({ message }: { message: ChatMessage }) {
+  const failed = message.kind === "error";
+  return (
+    <div className="flex flex-col gap-2.5">
+      <p
+        className={`max-w-[92%] text-[15px] leading-relaxed ${
+          failed ? "text-[var(--critical)]" : "text-[var(--ink)]"
+        }`}
+      >
+        {message.text}
+      </p>
+      {message.payload?.map((card, i) => <ResultCard key={i} card={card} />)}
+    </div>
+  );
+}
+
+function ResultCard({ card }: { card: Card }) {
+  const [open, setOpen] = useState(false);
+  const Icon = CARD_ICON[card.kind] ?? ForkKnife;
+  const hasDetail = card.lines.length > 0 || (card.sources?.length ?? 0) > 0;
+
+  return (
+    <article className="pop overflow-hidden rounded-3xl border border-[var(--hairline)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+      <div className="flex items-start gap-3 p-4">
+        <span
+          className="grid size-10 shrink-0 place-items-center rounded-2xl"
+          style={{ background: `var(--tint-${CARD_TINT[card.kind]})`, color: `var(--tint-${CARD_TINT[card.kind]}-ink)` }}
+        >
+          <Icon weight="fill" className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[15px] font-bold leading-tight">{card.title}</h3>
+          {card.facts && card.facts.length > 0 && (
+            <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+              {card.facts.map((f) => (
+                <div key={f.label} className="flex items-baseline gap-1.5">
+                  <dt className="text-[11px] font-medium text-[var(--ink-3)]">{f.label}</dt>
+                  <dd className="tnum text-[13px] font-bold">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+        {hasDetail && (
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--ink-3)] transition-colors hover:bg-[var(--surface-2)]"
+            aria-expanded={open}
+            aria-label={open ? "Hide detail" : "Show detail"}
+          >
+            <CaretDown weight="bold" className={`size-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+          </button>
+        )}
+      </div>
+
+      {hasDetail && open && (
+        <div className="fade border-t border-[var(--hairline)] bg-[var(--surface-2)] px-4 py-3">
+          {card.lines.length > 0 && (
+            <ul className="space-y-1.5">
+              {card.lines.map((l, i) => (
+                <li key={i} className="flex gap-2 text-[13px] leading-snug text-[var(--ink-2)]">
+                  <span className="mt-[7px] size-1 shrink-0 rounded-full bg-[var(--ink-3)]" />
+                  {l}
+                </li>
+              ))}
+            </ul>
+          )}
+          {card.sources && card.sources.length > 0 && (
+            <p className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--ink-3)]">
+              <span className="font-semibold">Looked up:</span>
+              {card.sources.map((s) => (
+                <a
+                  key={s.uri}
+                  href={s.uri}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="rounded-full bg-[var(--surface-3)] px-2 py-0.5 hover:text-[var(--brand)]"
+                >
+                  {s.title}
+                </a>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function Thinking() {
+  return (
+    <div className="flex items-center gap-2 text-[var(--ink-3)]">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="size-2 rounded-full bg-current"
+          style={{ animation: `breathe 1.2s ease-in-out ${i * 0.16}s infinite` }}
+        />
+      ))}
+      <span className="ml-1 text-[13px]">Working it out…</span>
+    </div>
+  );
+}
+
+function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
+  return (
+    <div className="mx-auto flex max-w-lg flex-col items-center px-2 py-10 text-center">
+      <Plate />
+      <h2 className="rise mt-6 text-[22px] font-extrabold tracking-[-0.03em]">Just tell me what happened</h2>
+      <p className="rise mt-2 max-w-sm text-[15px] leading-relaxed text-[var(--ink-2)]" style={{ animationDelay: "60ms" }}>
+        Food, training, your weight, water, in whatever words come naturally. I&apos;ll work out
+        the numbers and file it in the right place.
+      </p>
+      <ul className="stagger mt-7 flex w-full flex-col gap-2">
+        {PROMPTS.map((p, i) => (
+          <li key={p} style={{ "--i": i + 2 } as React.CSSProperties}>
+            <button
+              onClick={() => onPick(p)}
+              className="w-full rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-left text-[14px] text-[var(--ink-2)] transition-all hover:border-[var(--brand)] hover:text-[var(--ink)] active:scale-[0.99]"
+            >
+              <span className="mr-2 text-[var(--ink-3)]">Try</span>
+              {p}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Spot illustration: a plate with the app's arc motif as the meal. */
+function Plate() {
+  return (
+    <svg viewBox="0 0 160 120" className="pop h-28 w-40" role="img" aria-label="">
+      <ellipse cx="80" cy="102" rx="52" ry="7" fill="var(--ink)" opacity="0.06" />
+      <circle cx="80" cy="60" r="42" fill="var(--surface-2)" stroke="var(--hairline-strong)" strokeWidth="2" />
+      <circle cx="80" cy="60" r="31" fill="var(--surface)" stroke="var(--hairline)" strokeWidth="1.5" />
+      <path d="M99 44a24 24 0 1 0 0 32" fill="none" stroke="var(--brand)" strokeWidth="7" strokeLinecap="round" />
+      <circle cx="99" cy="76" r="5.5" fill="var(--brand)" />
+      <circle cx="36" cy="34" r="4" fill="var(--series-2)" opacity="0.9" />
+      <circle cx="128" cy="30" r="3" fill="var(--series-1)" opacity="0.85" />
+      <circle cx="132" cy="86" r="3.5" fill="var(--series-3)" opacity="0.85" />
+    </svg>
+  );
+}
