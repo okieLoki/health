@@ -8,6 +8,7 @@ import { Panel, PageTitle, Pill, SectionTitle } from "@/components/ui";
 import { MetricCard } from "@/components/metric-card";
 import { ProfileForm } from "@/components/profile-form";
 import { AppleHealthSetup } from "@/components/apple-health-setup";
+import { InstallButton } from "@/components/pwa";
 import { ActionButton } from "@/components/loggers";
 
 export const metadata: Metadata = { title: "You" };
@@ -67,6 +68,8 @@ export default async function YouPage() {
             }}
           />
         </Panel>
+
+        <InstallButton />
 
         <Panel className="mb-4">
           <AppleHealthSetup endpoint={ingestUrl} token={profile.ingestToken} />
