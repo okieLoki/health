@@ -33,8 +33,8 @@ export function MetricCard({
 }) {
   const body = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-[13px] font-semibold text-[var(--ink-2)]">{label}</span>
+      <div className="flex items-start justify-between gap-1.5">
+        <span className="min-w-0 truncate text-[13px] font-semibold text-[var(--ink-2)]">{label}</span>
         <span
           className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--surface)]/70 [&>svg]:size-[15px]"
           style={{ color: `var(--tint-${tint}-ink)` }}
@@ -43,17 +43,19 @@ export function MetricCard({
         </span>
       </div>
 
-      <p className="stat mt-3 text-[28px] leading-none">
+      {/* Three of these sit side by side on a 412px phone, so the numerals
+          step down rather than spilling out of the tile. */}
+      <p className="stat mt-3 truncate text-[22px] leading-none sm:text-[28px]">
         {value}
-        {unit && <span className="ml-1 text-[13px] font-semibold text-[var(--ink-3)]">{unit}</span>}
+        {unit && <span className="ml-1 text-[12px] font-semibold text-[var(--ink-3)] sm:text-[13px]">{unit}</span>}
       </p>
 
-      {sub && <p className="mt-1.5 text-[12px] text-[var(--ink-3)]">{sub}</p>}
+      {sub && <p className="mt-1.5 truncate text-[12px] text-[var(--ink-3)]">{sub}</p>}
       {spark && <div className="mt-3 h-8">{spark}</div>}
     </>
   );
 
-  const classes = `block rounded-[24px] p-4 transition-transform duration-200 active:scale-[0.98] ${className}`;
+  const classes = `block min-w-0 rounded-[24px] p-3.5 transition-transform duration-200 active:scale-[0.98] sm:p-4 ${className}`;
   const styles = { background: `var(--tint-${tint})`, ...style };
 
   return href ? (

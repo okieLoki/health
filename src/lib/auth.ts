@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createNeonAuth } from "@neondatabase/auth/next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -12,6 +13,8 @@ const secret = process.env.NEON_AUTH_COOKIE_SECRET;
  */
 export const auth = createNeonAuth({
   baseUrl: baseUrl ?? "http://neon-auth-not-configured.invalid",
+  // The SDK's default 5 minute session cache measured no slower than 10, so
+  // there is no reason to widen the window a revoked session stays valid.
   cookies: { secret: secret ?? "development-placeholder-secret-min-32-chars!!" },
 });
 
@@ -25,22 +28,41 @@ export class UnauthorizedError extends Error {
 
 type AuthUser = { id: string; email: string; name?: string | null; image?: string | null };
 
-/** Mirror the Neon Auth identity into our own table, once, on first sight. */
+/**
+ * Mirror the Neon Auth identity into our own table.
+ *
+ * This runs on every authenticated request, so the steady state must be a
+ * single read. Writing unconditionally cost two round trips per request, to a
+ * database in another region, to store values that almost never change.
+ */
 async function syncUser(authUser: AuthUser) {
+  const name = authUser.name ?? null;
+  const image = authUser.image ?? null;
+
+  const existing = await db.query.users.findFirst({ where: eq(users.authId, authUser.id) });
+  if (existing) {
+    const unchanged =
+      existing.email === authUser.email && existing.name === name && existing.image === image;
+    if (unchanged) return existing;
+
+    const [updated] = await db
+      .update(users)
+      .set({ email: authUser.email, name, image })
+      .where(eq(users.authId, authUser.id))
+      .returning();
+    return updated;
+  }
+
   const [row] = await db
     .insert(users)
-    .values({
-      authId: authUser.id,
-      email: authUser.email,
-      name: authUser.name ?? null,
-      image: authUser.image ?? null,
-    })
+    .values({ authId: authUser.id, email: authUser.email, name, image })
     .onConflictDoUpdate({
       target: users.authId,
-      set: { email: authUser.email, name: authUser.name ?? null, image: authUser.image ?? null },
+      set: { email: authUser.email, name, image },
     })
     .returning();
 
+  // Only a brand new user needs a profile row.
   await db
     .insert(profiles)
     .values({ userId: row.id, ingestToken: newIngestToken() })
@@ -48,7 +70,12 @@ async function syncUser(authUser: AuthUser) {
   return row;
 }
 
-export async function getSessionUser() {
+/**
+ * Cached for the life of one request. The app layout and the page beneath it
+ * both need the user, and without this each render hit the Neon Auth service
+ * twice and synced the user twice.
+ */
+export const getSessionUser = cache(async () => {
   if (!authConfigured()) return null;
   try {
     const { data: session } = await auth.getSession();
@@ -57,7 +84,7 @@ export async function getSessionUser() {
   } catch {
     return null;
   }
-}
+});
 
 /** Throws if unauthenticated, first line of every protected route handler. */
 export async function requireUser() {
@@ -73,7 +100,8 @@ export function newIngestToken() {
     .join("");
 }
 
-export async function getProfile(userId: string) {
+/** Cached per request for the same reason as getSessionUser. */
+export const getProfile = cache(async (userId: string) => {
   const existing = await db.query.profiles.findFirst({ where: eq(profiles.userId, userId) });
   if (existing) return existing;
   const [created] = await db
@@ -81,6 +109,6 @@ export async function getProfile(userId: string) {
     .values({ userId, ingestToken: newIngestToken() })
     .returning();
   return created;
-}
+});
 
-export type Profile = Awaited<ReturnType<typeof getProfile>>;
+export type Profile = NonNullable<Awaited<ReturnType<typeof getProfile>>>;

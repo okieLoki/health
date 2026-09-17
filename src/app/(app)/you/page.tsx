@@ -38,7 +38,7 @@ export default async function YouPage() {
           )}
         </div>
 
-        <div className="stagger mb-5 grid grid-cols-3 gap-3">
+        <div className="stagger mb-5 grid grid-cols-3 gap-2.5 sm:gap-3">
           <MetricCard tint="cal" label="BMR" icon={<CheckCircle weight="fill" />} value={t.bmr ? kcal(t.bmr) : "0"} unit="kcal" sub="at rest" style={{ "--i": 0 } as React.CSSProperties} />
           <MetricCard tint="move" label="Burn" icon={<CheckCircle weight="fill" />} value={t.tdee ? kcal(t.tdee) : "0"} unit="kcal" sub={t.tdeeBasis ?? "estimated"} style={{ "--i": 1 } as React.CSSProperties} />
           <MetricCard tint="body" label="Protein" icon={<CheckCircle weight="fill" />} value={t.proteinG ?? 0} unit="g" sub="daily floor" style={{ "--i": 2 } as React.CSSProperties} />
